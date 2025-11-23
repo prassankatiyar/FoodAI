@@ -15,8 +15,7 @@ I used a technique called **Transfer Learning**.
 * Instead of building a computer brain from zero, I used a pre-made smart model called **MobileNetV2**.
 * I "retrained" this model to specifically recognize the foods in my folder.
 * I made the training harder by rotating and zooming the images, so the AI learns to recognize food from different angles.
-
-**Accuracy:** The model is about 90% accurate.
+x
 
 ## Tools I Used
 * **Python:** The main programming language.
