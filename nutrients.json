@@ -1,0 +1,20 @@
+{
+    "apple": {
+        "calories": 52,
+        "protein": "0.3g",
+        "carbs": "14g",
+        "fat": "0.2g"
+    },
+    "burger": {
+        "calories": 295,
+        "protein": "17g",
+        "carbs": "30g",
+        "fat": "14g"
+    },
+    "dosa": {
+        "calories": 168,
+        "protein": "4g",
+        "carbs": "29g",
+        "fat": "3.7g"
+    }
+}

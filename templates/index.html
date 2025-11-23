@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Food Tracker</title>
+    <style>
+        body { font-family: 'Segoe UI', sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; background-color: #f4f7f6; text-align: center; }
+        
+        /* Camera Section */
+        .camera-box { background: white; padding: 10px; border-radius: 15px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
+        video { width: 100%; border-radius: 10px; }
+        button { background-color: #007bff; color: white; border: none; padding: 12px 25px; font-size: 16px; border-radius: 50px; cursor: pointer; margin-top: 15px; transition: 0.3s; }
+        button:hover { background-color: #0056b3; }
+        button.log-btn { background-color: #28a745; display: none; margin-top: 10px; } /* Hidden by default */
+        
+        /* Result Section */
+        #result { margin-top: 20px; padding: 15px; border-radius: 10px; background: white; display: none; }
+        .food-title { font-size: 24px; font-weight: bold; color: #333; }
+        .stats { color: #666; font-size: 14px; margin-bottom: 10px; }
+        
+        /* Daily Log Section */
+        .log-section { margin-top: 30px; text-align: left; }
+        .log-item { background: white; padding: 10px; border-bottom: 1px solid #eee; display: flex; justify-content: space-between; align-items: center; }
+        .total-box { background: #333; color: white; padding: 15px; border-radius: 10px; margin-top: 20px; font-weight: bold; display: flex; justify-content: space-between; }
+        
+        /* Delete button */
+        .del-btn { color: red; cursor: pointer; font-weight: bold; margin-left: 10px; }
+    </style>
+</head>
+<body>
+
+    <h1>📸 AI Nutritionist</h1>
+    
+    <div class="camera-box">
+        <video id="video" autoplay></video>
+        <canvas id="canvas" style="display:none;"></canvas>
+        <button id="captureBtn">🔍 Scan Food</button>
+    </div>
+
+    <div id="result">
+        <div class="food-title" id="foodName">Detecting...</div>
+        <div class="stats" id="nutrientInfo"></div>
+        <button id="logBtn" class="log-btn">➕ Add to Daily Log</button>
+    </div>
+
+    <div class="log-section">
+        <h3>📅 Today's Meals</h3>
+        <div id="mealList">
+            </div>
+
+        <div class="total-box">
+            <span>Total Calories:</span>
+            <span id="totalCals">0 kcal</span>
+        </div>
+    </div>
+
+    <script>
+        // --- VARIABLES ---
+        const video = document.getElementById('video');
+        const canvas = document.getElementById('canvas');
+        const captureBtn = document.getElementById('captureBtn');
+        const logBtn = document.getElementById('logBtn');
+        const resultDiv = document.getElementById('result');
+        
+        let currentPrediction = null; // Stores temporary result
+        let dailyMeals = JSON.parse(localStorage.getItem('myMeals')) || []; // Load from memory
+
+        // --- 1. START CAMERA ---
+        navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } })
+            .then(stream => video.srcObject = stream);
+
+        // --- 2. UPDATE LIST ON LOAD ---
+        renderList();
+
+        // --- 3. CAPTURE & PREDICT ---
+        captureBtn.addEventListener('click', () => {
+            const context = canvas.getContext('2d');
+            canvas.width = video.videoWidth;
+            canvas.height = video.videoHeight;
+            context.drawImage(video, 0, 0);
+
+            canvas.toBlob(blob => {
+                const fd = new FormData();
+                fd.append('file', blob);
+
+                fetch('/predict', { method: 'POST', body: fd })
+                    .then(r => r.json())
+                    .then(data => {
+                        // Show Result
+                        resultDiv.style.display = 'block';
+                        document.getElementById('foodName').innerText = 
+                            `${data.food.toUpperCase()} (${data.confidence})`;
+                        
+                        document.getElementById('nutrientInfo').innerText = 
+                            `Cal: ${data.nutrients.calories} | Prot: ${data.nutrients.protein} | Carbs: ${data.nutrients.carbs}`;
+                        
+                        // Show "Add to Log" button
+                        logBtn.style.display = 'inline-block';
+                        
+                        // Save data temporarily so we can log it
+                        currentPrediction = {
+                            name: data.food,
+                            calories: data.nutrients.calories,
+                            protein: data.nutrients.protein
+                        };
+                    });
+            });
+        });
+
+        // --- 4. LOG MEAL FUNCTION ---
+        logBtn.addEventListener('click', () => {
+            if (!currentPrediction) return;
+
+            // Add to array
+            dailyMeals.push(currentPrediction);
+            
+            // Save to LocalStorage (Browser Memory)
+            localStorage.setItem('myMeals', JSON.stringify(dailyMeals));
+
+            // Refresh List
+            renderList();
+            
+            // Hide result to reset
+            resultDiv.style.display = 'none';
+            logBtn.style.display = 'none';
+        });
+
+        // --- 5. RENDER LIST & CALCULATE TOTAL ---
+        function renderList() {
+            const list = document.getElementById('mealList');
+            list.innerHTML = ''; // Clear current view
+            let total = 0;
+
+            dailyMeals.forEach((meal, index) => {
+                total += parseInt(meal.calories || 0);
+                
+                // Create HTML for one item
+                const item = document.createElement('div');
+                item.className = 'log-item';
+                item.innerHTML = `
+                    <span><b>${meal.name.toUpperCase()}</b> <small>(${meal.calories} kcal)</small></span>
+                    <span class="del-btn" onclick="deleteItem(${index})">✕</span>
+                `;
+                list.appendChild(item);
+            });
+
+            // Update Total
+            document.getElementById('totalCals').innerText = total + " kcal";
+        }
+
+        // --- 6. DELETE ITEM FUNCTION ---
+        window.deleteItem = function(index) {
+            dailyMeals.splice(index, 1); // Remove from array
+            localStorage.setItem('myMeals', JSON.stringify(dailyMeals)); // Update memory
+            renderList(); // Update screen
+        }
+    </script>
+</body>
+</html>
