@@ -55,4 +55,4 @@ print("Training with Augmentation... This will take longer but is smarter.")
 model.fit(train_generator, epochs=10, validation_data=validation_generator)
 
 model.save('food_model.h5')
-print("Done! Smarter Model Saved.")
+print("Done!")

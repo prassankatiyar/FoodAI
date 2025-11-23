@@ -20,4 +20,4 @@ for root, dirs, files in os.walk(dataset_path):
             except Exception as e:
                 print(f"Error reading {file}: {e}")
 
-print("Cleanup Complete! You can run training again.")
+print("Cleanup Complete")
