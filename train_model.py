@@ -54,4 +54,4 @@ model.compile(optimizer=Adam(learning_rate=0.00001),
 model.fit(train_generator, epochs=10, validation_data=validation_generator)
 
 model.save('food_model.h5')
-print("Done!")
+print("Done_")
